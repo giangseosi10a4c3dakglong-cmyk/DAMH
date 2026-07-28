@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xem Lịch Họp Cá Nhân</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f9; }
+        .header { background: #2ecc71; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 20px; }
+        .logo-box { background: #9b59b6; color: #f1c40f; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer;}
+        .user-avatar { background: #f1c40f; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; color: black; }
+        .dropdown { position: relative; display: inline-block; cursor: pointer; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: #f9f9f9; min-width: 170px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 1; border-radius: 4px;}
+        .dropdown-content a { color: black; padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid #ddd; font-size: 13px;}
+        .dropdown-content a:hover { background-color: #f1f1f1; }
+        .dropdown:hover .dropdown-content { display: block; }
+
+        .admin-nav { display: none; gap: 10px; margin-bottom: 15px; }
+        .btn-admin-menu { background: #34495e; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px; }
+        .btn-admin-menu:hover { background: #2c3e50; }
+
+        .filter-bar { background: #e74c3c; padding: 15px; display: flex; gap: 10px; align-items: center; border-radius: 4px; }
+        .btn-action { background: #2ecc71; border: none; padding: 8px 15px; font-weight: bold; cursor: pointer; border-radius: 4px; text-decoration: none; color: black; }
+        .search-input { padding: 8px; border: none; border-radius: 4px; flex-grow: 1; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 15px; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .status-badge { padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; display: inline-block; }
+        .status-green { background: #2ecc71; }
+        .status-red { background: #e74c3c; }
+        .status-yellow { background: #f1c40f; color: black; }
+        .op-btn { padding: 6px 10px; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; margin-right: 4px; text-decoration: none; display: inline-block;}
+        .btn-cancel { background: #e74c3c; color: white; }
+        .btn-edit { background: #3498db; color: white; }
+
+        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 20px; border-radius: 8px; width: 350px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .modal-header { font-weight: bold; font-size: 18px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .modal-close { float: right; cursor: pointer; font-size: 18px; color: #e74c3c; font-weight: bold; border: none; background: none;}
+        .modal input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;}
+        .modal-btn { width: 100%; padding: 10px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-save { background: #2ecc71; }
+        .btn-warning { background: #f39c12; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="dashboard.html" style="text-decoration: none;"><div class="logo-box">LOGO CTY XYZ</div></a>
+    <div class="dropdown">
+        <div class="user-avatar" id="avatarName">👤 Khách ▾</div>
+        <div class="dropdown-content">
+            <a href="#" onclick="openModal('profileModal')">Cập nhật thông tin</a>
+            <a href="#" onclick="openModal('passwordModal')">Đổi mật khẩu</a>
+            <a href="login.html" onclick="localStorage.removeItem('currentUser')">Đăng xuất</a>
+        </div>
+    </div>
+</div>
+
+<div id="profileModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('profileModal')">X</button>
+        <div class="modal-header">Cập Nhật Thông Tin</div>
+        <form onsubmit="updateProfile(event)">
+            <label>Họ và Tên</label><input type="text" id="editFullName" required>
+            <label>Email</label><input type="email" id="editEmail" required>
+            <button type="submit" class="modal-btn btn-save">Lưu Thay Đổi</button>
+        </form>
+    </div>
+</div>
+
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('passwordModal')">X</button>
+        <div class="modal-header">Đổi Mật Khẩu</div>
+        <form onsubmit="changePassword(event)">
+            <input type="password" id="oldPassword" placeholder="Mật khẩu hiện tại" required>
+            <input type="password" id="newPassword" placeholder="Mật khẩu mới" minlength="8" required>
+            <input type="password" id="confirmNewPassword" placeholder="Xác nhận mật khẩu mới" required>
+            <button type="submit" class="modal-btn btn-warning">Xác Nhận Đổi</button>
+        </form>
+    </div>
+</div>
+
+<!-- MENU ĐIỀU HƯỚNG DÀNH RIÊNG CHO ADMIN -->
+<div id="adminMenu" class="admin-nav">
+    <a href="statistics.html" class="btn-admin-menu">📊 Xem Thống Kê Phòng Họp</a>
+    <a href="users.html" class="btn-admin-menu" style="background: #e74c3c;">👥 Quản Lý Tài Khoản Nhân Viên</a>
+</div>
+
+<div class="filter-bar">
+    <a href="create-meeting.html" class="btn-action">Tạo lịch mới</a>
+    <input type="text" id="searchInput" class="search-input" placeholder="Tìm tên cuộc họp / người tổ chức..." onkeyup="filterMeetings()">
+    <input type="text" id="roomInput" class="search-input" placeholder="Tìm kiếm phòng họp..." onkeyup="filterMeetings()">
+</div>
+
+<table>
+    <thead><tr><th>Tên cuộc họp</th><th>Tổ chức</th><th>Bắt đầu</th><th>Phòng</th><th>Người Tham Gia</th><th>Tình trạng</th><th>Thao tác</th></tr></thead>
+    <tbody id="data-rows"></tbody>
+</table>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const userStr = localStorage.getItem('currentUser');
+        if(!userStr) return window.location.href = "login.html";
+        
+        const user = JSON.parse(userStr);
+        document.getElementById('avatarName').innerText = `👤 ${user.FullName} (${user.Role}) ▾`;
+        
+        // Nếu là Admin thì hiện menu điều hướng riêng
+        if(user.Role === 'Admin') {
+            document.getElementById('adminMenu').style.display = 'flex';
+        }
+        loadMeetings("", ""); 
+    });
+
+    function openModal(id) {
+        document.getElementById(id).style.display = 'block';
+        if(id === 'profileModal') {
+            const u = JSON.parse(localStorage.getItem('currentUser'));
+            document.getElementById('editFullName').value = u.FullName;
+            document.getElementById('editEmail').value = u.Email;
+        }
+    }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    async function updateProfile(e) {
+        e.preventDefault();
+        const u = JSON.parse(localStorage.getItem('currentUser'));
+        const newFullName = document.getElementById('editFullName').value, newEmail = document.getElementById('editEmail').value;
+        try {
+            const res = await fetch('http://localhost:3000/api/users/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u.Username, newFullName, newEmail }) });
+            if(res.ok) {
+                alert("Cập nhật thành công!");
+                u.FullName = newFullName; u.Email = newEmail;
+                localStorage.setItem('currentUser', JSON.stringify(u));
+                document.getElementById('avatarName').innerText = `👤 ${u.FullName} (${u.Role}) ▾`;
+                closeModal('profileModal');
+            } else alert(await res.text());
+        } catch(e) {}
+    }
+
+    async function changePassword(e) {
+        e.preventDefault();
+        const u = JSON.parse(localStorage.getItem('currentUser'));
+        const oldPassword = document.getElementById('oldPassword').value, newPassword = document.getElementById('newPassword').value;
+        if(newPassword !== document.getElementById('confirmNewPassword').value) return alert("Mật khẩu xác nhận sai!");
+        try {
+            const res = await fetch('http://localhost:3000/api/users/change-password', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u.Username, oldPassword, newPassword }) });
+            if(res.ok) { alert("Đổi mật khẩu thành công!"); localStorage.removeItem('currentUser'); window.location.href='login.html'; }
+            else alert(await res.text());
+        } catch(e) {}
+    }
+
+    async function loadMeetings(textFilter = "", roomFilter = "") {
+        const res = await fetch('http://localhost:3000/api/meetings');
+        const list = await res.json();
+        const currentUser = JSON.parse(localStorage.getItem('currentUser')).FullName;
+        const userRole = JSON.parse(localStorage.getItem('currentUser')).Role;
+        
+        let html = '';
+        list.forEach((m) => {
+            if ((m.Title.toLowerCase().includes(textFilter) || m.Creator.toLowerCase().includes(textFilter)) && m.Room.toLowerCase().includes(roomFilter)) {
+                let badgeClass = m.Status === "Đồng ý" ? "status-green" : (m.Status === "Từ chối" ? "status-red" : "status-yellow");
+                let actionContent = "";
+
+                if (m.Creator === currentUser || userRole === 'Admin') {
+                    const editBtn = m.Creator === currentUser ? `<a href="create-meeting.html?id=${m.MeetingID}" class="op-btn btn-edit">Sửa</a>` : '';
+                    actionContent = `${editBtn} <button class="op-btn btn-cancel" onclick="deleteMeeting(${m.MeetingID})">Hủy</button>`;
+                } else if (m.Status === "Chờ xác nhận") {
+                    actionContent = `<button class="op-btn status-green" onclick="updateStatus(${m.MeetingID}, 'Đồng ý')">✓</button> <button class="op-btn btn-cancel" onclick="updateStatus(${m.MeetingID}, 'Từ chối')">X</button>`;
+                }
+
+                html += `<tr><td><strong>${m.Title}</strong></td><td>${m.Creator}</td><td>${m.StartTime.replace('T', ' ')}</td><td>${m.Room}</td><td>${m.Participants || ''}</td><td><span class="status-badge ${badgeClass}">${m.Status}</span></td><td>${actionContent}</td></tr>`;
+            }
+        });
+        document.getElementById('data-rows').innerHTML = html;
+    }
+
+    window.deleteMeeting = async function(id) {
+        if(confirm("Xác nhận hủy cuộc họp?")) {
+            await fetch(`http://localhost:3000/api/meetings/${id}`, { method: 'DELETE' });
+            filterMeetings();
+        }
+    };
+
+    window.updateStatus = async function(id, status) {
+        await fetch(`http://localhost:3000/api/meetings/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+        filterMeetings(); 
+    };
+
+    function filterMeetings() { loadMeetings(document.getElementById('searchInput').value.toLowerCase(), document.getElementById('roomInput').value.toLowerCase()); }
+</script>
+</body>
+</html>

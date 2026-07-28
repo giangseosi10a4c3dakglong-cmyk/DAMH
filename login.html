@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng Nhập</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f6f9; }
+        .card { background: #e8d0f5; padding: 30px; border-radius: 8px; width: 360px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .title { background: #fff; padding: 10px; font-weight: bold; text-align: center; margin-bottom: 25px; border-radius: 4px; }
+        .form-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .forgot-link { display: block; text-align: right; font-size: 13px; color: #555; text-decoration: none; margin-bottom: 15px; }
+        .btn { width: 100%; padding: 10px; background: #fff; border: 1px solid #ccc; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .sso-section { text-align: center; margin-top: 20px; font-size: 14px; color: #555; }
+        .sso-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
+        .sso-btn { padding: 8px; background: #fff; border: 1px solid #ccc; font-size: 12px; cursor: pointer; width: 30%; border-radius: 4px; text-align: center; font-weight: bold; transition: 0.3s; }
+        .sso-btn:hover { background: #e0e0e0; }
+        .redirect-link { display: block; text-align: center; margin-top: 15px; color: #555; font-size: 13px; text-decoration: none; font-weight: bold;}
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="title">ĐĂNG NHẬP</div>
+    <form onsubmit="handleLogin(event)">
+        <div class="form-group"><input type="text" id="loginUsername" placeholder="Email hoặc tên đăng nhập" required></div>
+        <div class="form-group"><input type="password" id="loginPassword" placeholder="Mật Khẩu" required></div>
+       <a href="#" class="forgot-link" onclick="handleForgotPassword(event)">Quên mật khẩu?</a>
+        <button type="submit" class="btn">Đăng Nhập</button>
+    </form>
+    
+    <div class="sso-section">
+        <div>hoặc đăng nhập bằng</div>
+        <div class="sso-buttons">
+            <button class="sso-btn" onclick="handleSSO('Google')">Google</button>
+            <button class="sso-btn" onclick="handleSSO('Facebook')">Facebook</button>
+            <button class="sso-btn" onclick="handleSSO('Apple')">Apple</button>
+        </div>
+    </div>
+    <a href="register.html" class="redirect-link">Chưa có tài khoản? Đăng ký tại đây</a>
+</div>
+
+<script>
+    async function handleLogin(event) {
+        event.preventDefault();
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+        try {
+            const res = await fetch('http://localhost:3000/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            if(res.ok) {
+                const data = await res.json();
+                localStorage.setItem('currentUser', JSON.stringify(data.user)); 
+                window.location.href = "dashboard.html";
+            } else alert(await res.text());
+        } catch(e) { alert("Lỗi kết nối máy chủ API."); }
+    }
+
+    async function handleSSO(provider) {
+        alert(`Đang chuyển hướng đến cổng đăng nhập ${provider}...`);
+        const email = prompt(`[GIAO DIỆN ${provider.toUpperCase()}]\nVui lòng xác nhận Email ${provider} của bạn:`);
+        if (!email) return;
+        const fullname = prompt(`[GIAO DIỆN ${provider.toUpperCase()}]\nVui lòng nhập tên hiển thị:`);
+        if (!fullname) return;
+
+        try {
+            const res = await fetch('http://localhost:3000/api/sso-login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, fullname, provider })
+            });
+            if(res.ok) {
+                const data = await res.json();
+                alert(`Đăng nhập thành công qua ${provider}!`);
+                localStorage.setItem('currentUser', JSON.stringify(data.user)); 
+                window.location.href = "dashboard.html";
+            } else alert(await res.text());
+        } catch(e) { alert("Lỗi kết nối máy chủ API."); }
+    }
+
+    async function handleForgotPassword(event) {
+        event.preventDefault();
+        const email = prompt("Nhập Email của bạn để nhận mã OTP khôi phục:");
+        if (!email) return;
+
+        const res = await fetch('http://localhost:3000/api/users/forgot-password', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email })
+        });
+        
+        if (res.ok) {
+            const otp = prompt("Mã OTP đã gửi vào Email. Vui lòng nhập OTP:");
+            if (!otp) return;
+            const newPassword = prompt("Nhập mật khẩu mới (Tối thiểu 8 ký tự):");
+            if (!newPassword) return;
+
+            const resetRes = await fetch('http://localhost:3000/api/users/reset-password', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp, newPassword })
+            });
+            alert(await resetRes.text());
+        } else alert(await res.text());
+    }
+</script>
+</body>
+</html>

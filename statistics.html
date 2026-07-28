@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thống Kê Phòng Họp</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f9; }
+        .header { background: #2ecc71; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 20px; }
+        .logo-box { background: #9b59b6; color: #f1c40f; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer;}
+        .user-avatar { background: #f1c40f; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; color: black; }
+        .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .btn-back { background: #3498db; color: white; border: none; padding: 8px 15px; font-weight: bold; cursor: pointer; border-radius: 4px; text-decoration: none; display: inline-block; margin-bottom: 15px;}
+        .highlight { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="dashboard.html" style="text-decoration: none;"><div class="logo-box">LOGO CTY XYZ</div></a>
+    <div class="user-avatar" id="avatarName">👤 Admin ▾</div>
+</div>
+
+<div class="card">
+    <a href="dashboard.html" class="btn-back">← Quay lại </a>
+    <h2 style="color:#9b59b6; margin-top:0;">📊 BÁO CÁO & THỐNG KÊ SỬ DỤNG PHÒNG HỌP</h2>
+    
+    <label><b>Chọn khoảng thời gian thống kê:</b></label>
+    <select id="statsRange" onchange="loadStats()" style="padding: 8px; margin-top: 5px; margin-bottom: 15px; border-radius: 4px;">
+        <option value="week">7 Ngày qua (Tuần)</option>
+        <option value="month">30 Ngày qua (Tháng)</option>
+    </select>
+
+    <div id="topRoomNotice" style="background: #e8f8f5; padding: 10px; border-left: 4px solid #2ecc71; margin-bottom: 15px; font-weight: bold;">
+        🏆 Phòng được sử dụng nhiều nhất: Đang tải...
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tên Phòng Họp</th>
+                <th>Tổng Số Cuộc Họp</th>
+                <th>Tổng Số Giờ Phục Vụ</th>
+            </tr>
+        </thead>
+        <tbody id="stats-rows"></tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if(!user || user.Role !== 'Admin') {
+            alert("Bạn không có quyền truy cập trang này!");
+            window.location.href = "dashboard.html";
+            return;
+        }
+        document.getElementById('avatarName').innerText = `👤 ${user.FullName} (Admin)`;
+        loadStats();
+    });
+
+    async function loadStats() {
+        const range = document.getElementById('statsRange').value;
+        const res = await fetch(`http://localhost:3000/api/stats?range=${range}`);
+        const stats = await res.json();
+        const tbody = document.getElementById('stats-rows');
+        tbody.innerHTML = "";
+
+        if(stats.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">Không có dữ liệu thống kê trong khoảng thời gian này.</td></tr>`;
+            document.getElementById('topRoomNotice').innerHTML = `🏆 Phòng được sử dụng nhiều nhất: Chưa có dữ liệu`;
+            return;
+        }
+
+        const topRoom = stats[0];
+        document.getElementById('topRoomNotice').innerHTML = `🏆 Phòng được sử dụng nhiều nhất: <span class="highlight">${topRoom.Room}</span> với ${topRoom.Total} cuộc họp (${parseFloat(topRoom.Hours).toFixed(1)} giờ).`;
+
+        stats.forEach(s => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${s.Room}</b></td>
+                    <td>${s.Total} cuộc</td>
+                    <td><b style="color:green;">${parseFloat(s.Hours).toFixed(1)} giờ</b></td>
+                </tr>
+            `;
+        });
+    }
+</script>
+</body>
+</html>

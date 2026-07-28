@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản Lý Nhân Viên</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f9; }
+        .header { background: #2ecc71; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 20px; }
+        .logo-box { background: #9b59b6; color: #f1c40f; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer;}
+        .user-avatar { background: #f1c40f; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; color: black; }
+        .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .btn-back { background: #3498db; color: white; border: none; padding: 8px 15px; font-weight: bold; cursor: pointer; border-radius: 4px; text-decoration: none; display: inline-block; margin-bottom: 15px;}
+        .op-btn { padding: 6px 10px; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; }
+        .btn-cancel { background: #e74c3c; color: white; }
+        .status-green { background: #2ecc71; color: black; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="dashboard.html" style="text-decoration: none;"><div class="logo-box">LOGO CTY XYZ</div></a>
+    <div class="user-avatar" id="avatarName">👤 Admin ▾</div>
+</div>
+
+<div class="card">
+    <a href="dashboard.html" class="btn-back">← Quay lại</a>
+    <h2 style="color:#e74c3c; margin-top:0;">👥 QUẢN LÝ TÀI KHOẢN NHÂN VIÊN</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Họ Tên</th>
+                <th>Email</th>
+                <th>Vai Trò</th>
+                <th>Trạng Thái</th>
+                <th>Thao Tác</th>
+            </tr>
+        </thead>
+        <tbody id="users-rows"></tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if(!user || user.Role !== 'Admin') {
+            alert("Bạn không có quyền truy cập trang này!");
+            window.location.href = "dashboard.html";
+            return;
+        }
+        document.getElementById('avatarName').innerText = `👤 ${user.FullName} (Admin)`;
+        loadUsers();
+    });
+
+    async function loadUsers() {
+        const res = await fetch('http://localhost:3000/api/users');
+        const users = await res.json();
+        const tbody = document.getElementById('users-rows');
+        tbody.innerHTML = "";
+
+        users.forEach(u => {
+            const statusTag = u.IsActive ? '<span style="color:green; font-weight:bold;">Hoạt động</span>' : '<span style="color:red; font-weight:bold;">Đã khóa</span>';
+            const actionBtn = u.Role === 'Admin' ? '--' : `<button class="op-btn ${u.IsActive ? 'btn-cancel' : 'status-green'}" onclick="toggleLockUser(${u.UserID})">${u.IsActive ? 'Khóa' : 'Mở khóa'}</button>`;
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${u.FullName}</td>
+                    <td>${u.Email}</td>
+                    <td><b>${u.Role}</b></td>
+                    <td>${statusTag}</td>
+                    <td>${actionBtn}</td>
+                </tr>
+            `;
+        });
+    }
+
+    async function toggleLockUser(userId) {
+        if(confirm("Xác nhận đổi trạng thái tài khoản này?")) {
+            await fetch(`http://localhost:3000/api/users/${userId}/toggle-lock`, { method: 'PUT' });
+            loadUsers();
+        }
+    }
+</script>
+</body>
+</html>

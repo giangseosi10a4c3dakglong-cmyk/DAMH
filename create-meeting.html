@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo/Sửa Lịch Họp</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f9; }
+        .header { background: #2ecc71; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto;}
+        .logo-box { background: #9b59b6; color: #f1c40f; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer;}
+        .user-avatar { background: #f1c40f; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; color: black; }
+        .main-content { display: flex; justify-content: center; }
+        .form-container { background: #00cbd6; padding: 25px; border-radius: 8px; width: 100%; max-width: 800px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .form-title { background: #be19ca; color: white; padding: 10px; font-weight: bold; font-size: 18px; margin-bottom: 20px; display: inline-block; border-radius: 4px; }
+        .row { display: flex; gap: 20px; margin-bottom: 15px; }
+        .col { flex: 1; display: flex; flex-direction: column; }
+        input, select, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background-color: #be19ca; color: white; font-weight: bold; }
+        input::placeholder, textarea::placeholder { color: #eee; }
+        label { font-weight: bold; margin-bottom: 5px; color: #333; }
+        .btn-group { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn { padding: 10px 20px; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; }
+        .btn-submit { background: #be19ca; color: white; }
+        .btn-cancel { background: #7f8c8d; color: white; }
+        
+        /* CSS cho các nút lọc phòng mới */
+        .room-action-group { display: flex; gap: 10px; margin-bottom: 5px; }
+        .btn-room-free { background: #2ecc71; color: black; font-size: 12px; padding: 6px 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-room-busy { background: #e74c3c; color: white; font-size: 12px; padding: 6px 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-add-room { background: #f39c12; color: white; font-size: 12px; padding: 6px 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;}
+    </style>
+</head>
+<body>
+<div class="header">
+    <a href="dashboard.html" style="text-decoration: none;"><div class="logo-box">LOGO CTY XYZ</div></a>
+    <div class="user-avatar" id="avatarName">👤 Khách ▾</div>
+</div>
+<div class="main-content">
+    <div class="form-container">
+        <div class="form-title" id="pageTitle">TẠO LỊCH HỌP MỚI</div>
+        <form onsubmit="handleCreate(event)">
+            <div class="row">
+                <div class="col"><input type="text" id="meetingTitle" placeholder="Nhập tiêu đề cuộc họp" required maxlength="200"></div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <label>Thời gian bắt đầu</label>
+                    <input type="datetime-local" id="start" required>
+                </div>
+                <div class="col">
+                    <label>Thời gian kết thúc</label>
+                    <input type="datetime-local" id="end" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <label>Chọn phòng họp</label>
+                    <!-- Bộ nút bấm lọc theo ý bạn -->
+                    <div class="room-action-group">
+                        <button type="button" class="btn-room-free" onclick="filterRooms('free')">✔ Xem phòng trống</button>
+                        <button type="button" class="btn-room-busy" onclick="filterRooms('busy')">✖ Xem phòng đã kín</button>
+                        <button type="button" class="btn-add-room" id="btnAddRoom" onclick="addNewRoom()">+ Thêm phòng</button>
+                    </div>
+                    <select id="meetingRoom" required><option value="">-- Vui lòng chọn thời gian và bấm nút lọc phòng --</option></select>
+                </div>
+                <div class="col">
+                    <label>Email người tham gia</label>
+                    <input type="text" id="members" placeholder="nguyenvana@gmail.com, ..." required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col"><textarea id="desc" rows="4" placeholder="Nội dung cuộc họp"></textarea></div>
+            </div>
+            
+            <div class="btn-group">
+                <button type="submit" class="btn btn-submit">XÁC NHẬN</button>
+                <button type="button" class="btn btn-cancel" onclick="goBack()">HỦY</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const meetingId = urlParams.get('id');
+    let cachedRooms = []; // Lưu trữ dữ liệu phòng để lọc nhanh
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const userStr = localStorage.getItem('currentUser');
+        if(!userStr) return window.location.href = "login.html";
+        
+        const user = JSON.parse(userStr);
+        document.getElementById('avatarName').innerText = "👤 " + user.FullName + " ▾";
+        if (user.Role !== 'Admin') document.getElementById('btnAddRoom').style.display = 'none';
+        
+        if (meetingId) {
+            document.getElementById('pageTitle').innerText = "CHỈNH SỬA CUỘC HỌP";
+            const res = await fetch('http://localhost:3000/api/meetings');
+            const list = await res.json();
+            const meet = list.find(m => m.MeetingID == meetingId);
+            if(meet) {
+                document.getElementById('meetingTitle').value = meet.Title;
+                document.getElementById('start').value = meet.StartTime;
+                document.getElementById('end').value = meet.EndTime;
+                document.getElementById('members').value = meet.Participants || '';
+                document.getElementById('desc').value = meet.Content || '';
+                await fetchRoomsData();
+                document.getElementById('meetingRoom').value = meet.Room;
+            }
+        }
+    });
+
+    // Lấy dữ liệu phòng từ Server về bộ nhớ tạm
+    async function fetchRoomsData() {
+        const start = document.getElementById('start').value;
+        const end = document.getElementById('end').value;
+
+        if (!start || !end) {
+            alert("Vui lòng chọn thời gian bắt đầu và kết thúc trước!");
+            return false;
+        }
+        if (new Date(start) >= new Date(end)) {
+            alert("Thời gian kết thúc phải lớn hơn thời gian bắt đầu!");
+            return false;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:3000/api/rooms/available?start=${start}&end=${end}`);
+            cachedRooms = await res.json();
+            return true;
+        } catch (e) {
+            alert("Lỗi kết nối khi tải danh sách phòng!");
+            return false;
+        }
+    }
+
+    // Hàm lọc và hiển thị phòng dựa theo nút bấm (free: phòng trống, busy: phòng kín)
+    async function filterRooms(type) {
+        const success = await fetchRoomsData();
+        if (!success) return;
+
+        const select = document.getElementById('meetingRoom');
+        select.innerHTML = '';
+
+        if (type === 'free') {
+            const freeRooms = cachedRooms.filter(r => r.isAvailable);
+            if (freeRooms.length === 0) {
+                select.innerHTML = '<option value="">-- Không có phòng trống trong khung giờ này --</option>';
+            } else {
+                select.innerHTML = '<option value="">-- Chọn phòng trống --</option>';
+                freeRooms.forEach(r => {
+                    select.innerHTML += `<option value="${r.RoomName}">${r.RoomName} (Trống)</option>`;
+                });
+            }
+        } else if (type === 'busy') {
+            const busyRooms = cachedRooms.filter(r => !r.isAvailable);
+            if (busyRooms.length === 0) {
+                select.innerHTML = '<option value="">-- Không có phòng nào bị kín lịch --</option>';
+            } else {
+                select.innerHTML = '<option value="" disabled>-- Các phòng đã kín lịch (Không thể chọn) --</option>';
+                busyRooms.forEach(r => {
+                    select.innerHTML += `<option value="${r.RoomName}" disabled>${r.RoomName} (Đã kín lịch)</option>`;
+                });
+            }
+        }
+    }
+
+    async function addNewRoom() {
+        const newRoom = prompt("Nhập tên phòng mới:");
+        if (!newRoom) return; 
+        const userRole = JSON.parse(localStorage.getItem('currentUser')).Role;
+        const res = await fetch('http://localhost:3000/api/rooms', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomName: newRoom, role: userRole })
+        });
+        alert(await res.text());
+        filterRooms('free');
+    }
+
+    async function handleCreate(event) {
+        event.preventDefault();
+        const startVal = document.getElementById('start').value;
+        const endVal = document.getElementById('end').value;
+        const roomVal = document.getElementById('meetingRoom').value;
+
+        if (!roomVal) {
+            alert("Vui lòng bấm nút 'Xem phòng trống' và chọn một phòng hợp lệ!");
+            return;
+        }
+
+        const meetingData = {
+            title: document.getElementById('meetingTitle').value,
+            creator: JSON.parse(localStorage.getItem('currentUser')).FullName,
+            startTime: startVal, endTime: endVal,
+            room: roomVal,
+            participants: document.getElementById('members').value,
+            content: document.getElementById('desc').value
+        };
+
+        const method = meetingId ? 'PUT' : 'POST';
+        const url = meetingId ? `http://localhost:3000/api/meetings/${meetingId}` : 'http://localhost:3000/api/meetings';
+        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meetingData) });
+        if (res.ok) {
+            alert(meetingId ? "Sửa thành công!" : "Tạo lịch thành công!");
+            window.location.href = "dashboard.html";
+        } else {
+            const err = await res.json(); alert(err.error);
+        }
+    }
+    function goBack() { window.location.href = "dashboard.html"; }
+</script>
+</body>
+</html>
