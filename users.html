@@ -56,7 +56,7 @@
     });
 
     async function loadUsers() {
-        const res = await fetch('http://localhost:3000/api/users');
+        const res = await fetch('https://damh-1.onrender.com/api/users');
         const users = await res.json();
         const tbody = document.getElementById('users-rows');
         tbody.innerHTML = "";
@@ -79,7 +79,7 @@
 
     async function toggleLockUser(userId) {
         if(confirm("Xác nhận đổi trạng thái tài khoản này?")) {
-            await fetch(`http://localhost:3000/api/users/${userId}/toggle-lock`, { method: 'PUT' });
+            await fetch(`https://damh-1.onrender.com/api/users/${userId}/toggle-lock`, { method: 'PUT' });
             loadUsers();
         }
     }
