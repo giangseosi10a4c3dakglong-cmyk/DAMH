@@ -128,7 +128,7 @@
         const u = JSON.parse(localStorage.getItem('currentUser'));
         const newFullName = document.getElementById('editFullName').value, newEmail = document.getElementById('editEmail').value;
         try {
-            const res = await fetch('http://localhost:3000/api/users/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u.Username, newFullName, newEmail }) });
+            const res = await fetch('https://damh-1.onrender.com', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u.Username, newFullName, newEmail }) });
             if(res.ok) {
                 alert("Cập nhật thành công!");
                 u.FullName = newFullName; u.Email = newEmail;
@@ -145,14 +145,14 @@
         const oldPassword = document.getElementById('oldPassword').value, newPassword = document.getElementById('newPassword').value;
         if(newPassword !== document.getElementById('confirmNewPassword').value) return alert("Mật khẩu xác nhận sai!");
         try {
-            const res = await fetch('http://localhost:3000/api/users/change-password', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u.Username, oldPassword, newPassword }) });
+            const res = await fetch('https://damh-1.onrender.com', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u.Username, oldPassword, newPassword }) });
             if(res.ok) { alert("Đổi mật khẩu thành công!"); localStorage.removeItem('currentUser'); window.location.href='login.html'; }
             else alert(await res.text());
         } catch(e) {}
     }
 
     async function loadMeetings(textFilter = "", roomFilter = "") {
-        const res = await fetch('http://localhost:3000/api/meetings');
+        const res = await fetch('https://damh-1.onrender.com');
         const list = await res.json();
         const currentUser = JSON.parse(localStorage.getItem('currentUser')).FullName;
         const userRole = JSON.parse(localStorage.getItem('currentUser')).Role;
@@ -178,13 +178,13 @@
 
     window.deleteMeeting = async function(id) {
         if(confirm("Xác nhận hủy cuộc họp?")) {
-            await fetch(`http://localhost:3000/api/meetings/${id}`, { method: 'DELETE' });
+            await fetch(`https://damh-1.onrender.com/${id}`, { method: 'DELETE' });
             filterMeetings();
         }
     };
 
     window.updateStatus = async function(id, status) {
-        await fetch(`http://localhost:3000/api/meetings/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+        await fetch(`https://damh-1.onrender.com/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
         filterMeetings(); 
     };
 
