@@ -63,7 +63,7 @@
 
     async function loadStats() {
         const range = document.getElementById('statsRange').value;
-        const res = await fetch(`http://localhost:3000/api/stats?range=${range}`);
+        const res = await fetch(`https://damh-1.onrender.com/api/stats?range=${range}`);
         const stats = await res.json();
         const tbody = document.getElementById('stats-rows');
         tbody.innerHTML = "";
