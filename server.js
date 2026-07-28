@@ -48,10 +48,13 @@ pool.getConnection((err, connection) => {
 // 2. CẤU HÌNH NODEMAILER
 // ==========================================
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    family: 4, // ép dùng IPv4
     auth: {
-        user: 'giangseosi.10a4.c3dakglong@gmail.com',
-        pass: 'ezba kbzf hrkn pgvf'
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     }
 });
 
