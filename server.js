@@ -4,9 +4,15 @@ const mysql = require('mysql2');
 const nodemailer = require('nodemailer');
 
 const app = express();
-const PORT = 3000;
+// Sửa lại đoạn này để Render tự động cấp cổng mạng, nếu không có thì dùng cổng 3000
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Cấu hình CORS đầy đủ để nhận request từ GitHub Pages lên Render
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // ==========================================
@@ -16,7 +22,7 @@ const pool = mysql.createPool({
     host: 'sakura.proxy.rlwy.net',
     port: 40740,
     user: 'root',
-    password: 'RwuJsOoxqUvdtUiwnykqAidCFjmoZPnI', // Đổi lại thành mật khẩu MySQL của bạn (VD: pass trống '')
+    password: 'RwuJsOoxqUvdtUiwnykqAidCFjmoZPnI',
     database: 'railway',
     waitForConnections: true,
     connectionLimit: 10,
@@ -44,8 +50,8 @@ pool.getConnection((err, connection) => {
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'giangseosi.10a4.c3dakglong@gmail.com', // Điền Gmail của bạn
-        pass: 'ezba kbzf hrkn pgvf'        // Điền Mật khẩu ứng dụng 16 ký tự
+        user: 'giangseosi.10a4.c3dakglong@gmail.com',
+        pass: 'ezba kbzf hrkn pgvf'
     }
 });
 
@@ -59,7 +65,7 @@ app.post('/api/register', (req, res) => {
     pool.query(`INSERT INTO Users (FullName, Email, Username, Password, OTP, IsActive) VALUES (?, ?, ?, ?, ?, FALSE)`, [fullname, email, username, password, otp], (err) => {
         if (err) return res.status(400).send("Tên đăng nhập hoặc Email đã tồn tại!");
         transporter.sendMail({
-            from: '"Hệ Thống Lịch Họp" <email.cua.ban@gmail.com>',
+            from: '"Hệ Thống Lịch Họp" <giangseosi.10a4.c3dakglong@gmail.com>',
             to: email, subject: 'Mã Xác Thực Tài Khoản',
             html: `<h3>Xin chào ${fullname}</h3><p>Mã OTP kích hoạt tài khoản của bạn là: <b style="color:red; font-size: 20px;">${otp}</b></p>`
         });
@@ -112,7 +118,7 @@ app.post('/api/users/forgot-password', (req, res) => {
     pool.query(`UPDATE Users SET OTP = ? WHERE Email = ?`, [otp, email], (err, result) => {
         if (result.affectedRows === 0) return res.status(404).send("Email không tồn tại!");
         transporter.sendMail({
-            from: '"Hệ Thống" <email.cua.ban@gmail.com>',
+            from: '"Hệ Thống" <giangseosi.10a4.c3dakglong@gmail.com>',
             to: email, subject: 'Quên Mật Khẩu - Mã OTP',
             html: `<p>Mã OTP đổi mật khẩu của bạn là: <b style="color:red; font-size: 20px;">${otp}</b></p>`
         });
@@ -216,4 +222,4 @@ app.put('/api/users/:id/toggle-lock', (req, res) => {
     pool.query(`UPDATE Users SET IsActive = NOT IsActive WHERE UserID = ?`, [req.params.id], () => res.send("OK"));
 });
 
-app.listen(PORT, () => console.log(`🚀 Server chạy tại http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server chạy tại cổng ${PORT}`));
