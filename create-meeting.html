@@ -96,7 +96,7 @@
         
         if (meetingId) {
             document.getElementById('pageTitle').innerText = "CHỈNH SỬA CUỘC HỌP";
-            const res = await fetch('http://localhost:3000/api/meetings');
+            const res = await fetch('https://damh-1.onrender.com');
             const list = await res.json();
             const meet = list.find(m => m.MeetingID == meetingId);
             if(meet) {
@@ -126,7 +126,7 @@
         }
 
         try {
-            const res = await fetch(`http://localhost:3000/api/rooms/available?start=${start}&end=${end}`);
+            const res = await fetch(`https://damh-1.onrender.com/available?start=${start}&end=${end}`);
             cachedRooms = await res.json();
             return true;
         } catch (e) {
@@ -170,7 +170,7 @@
         const newRoom = prompt("Nhập tên phòng mới:");
         if (!newRoom) return; 
         const userRole = JSON.parse(localStorage.getItem('currentUser')).Role;
-        const res = await fetch('http://localhost:3000/api/rooms', {
+        const res = await fetch('https://damh-1.onrender.com', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ roomName: newRoom, role: userRole })
         });
@@ -199,7 +199,7 @@
         };
 
         const method = meetingId ? 'PUT' : 'POST';
-        const url = meetingId ? `http://localhost:3000/api/meetings/${meetingId}` : 'http://localhost:3000/api/meetings';
+        const url = meetingId ? `https://damh-1.onrender.com/${meetingId}` : 'https://damh-1.onrender.com';
         const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meetingData) });
         if (res.ok) {
             alert(meetingId ? "Sửa thành công!" : "Tạo lịch thành công!");
