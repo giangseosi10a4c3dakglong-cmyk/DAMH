@@ -45,7 +45,7 @@
         const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
         try {
-            const res = await fetch('http://localhost:3000/api/login', {
+            const res = await fetch('https://damh-1.onrender.com', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
@@ -65,7 +65,7 @@
         if (!fullname) return;
 
         try {
-            const res = await fetch('http://localhost:3000/api/sso-login', {
+            const res = await fetch('https://damh-1.onrender.com', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, fullname, provider })
             });
@@ -83,7 +83,7 @@
         const email = prompt("Nhập Email của bạn để nhận mã OTP khôi phục:");
         if (!email) return;
 
-        const res = await fetch('http://localhost:3000/api/users/forgot-password', {
+        const res = await fetch('https://damh-1.onrender.com', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email })
         });
         
@@ -93,7 +93,7 @@
             const newPassword = prompt("Nhập mật khẩu mới (Tối thiểu 8 ký tự):");
             if (!newPassword) return;
 
-            const resetRes = await fetch('http://localhost:3000/api/users/reset-password', {
+            const resetRes = await fetch('https://damh-1.onrender.com', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp, newPassword })
             });
