@@ -67,12 +67,20 @@ app.post('/api/register', (req, res) => {
 
     pool.query(`INSERT INTO Users (FullName, Email, Username, Password, OTP, IsActive) VALUES (?, ?, ?, ?, ?, FALSE)`, [fullname, email, username, password, otp], (err) => {
         if (err) return res.status(400).send("Tên đăng nhập hoặc Email đã tồn tại!");
+        
         transporter.sendMail({
             from: '"Hệ Thống Lịch Họp" <giangseosi.10a4.c3dakglong@gmail.com>',
-            to: email, subject: 'Mã Xác Thực Tài Khoản',
+            to: email, 
+            subject: 'Mã Xác Thực Tài Khoản',
             html: `<h3>Xin chào ${fullname}</h3><p>Mã OTP kích hoạt tài khoản của bạn là: <b style="color:red; font-size: 20px;">${otp}</b></p>`
+        }, (error, info) => {
+            if (error) {
+                console.error("❌ Lỗi gửi email đăng ký:", error);
+                return res.status(500).send("Tài khoản đã tạo nhưng lỗi gửi email OTP. Vui lòng kiểm tra lại cấu hình mail.");
+            }
+            console.log("✅ Gửi mail OTP đăng ký thành công tới:", email);
+            res.status(200).send("Đăng ký thành công! Đang gửi OTP...");
         });
-        res.status(200).send("Đăng ký thành công! Đang gửi OTP...");
     });
 });
 
@@ -118,14 +126,22 @@ app.post('/api/sso-login', (req, res) => {
 app.post('/api/users/forgot-password', (req, res) => {
     const { email } = req.body;
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    pool.query(`UPDATE Users SET OTP = ? WHERE Email = ?`, [otp, email], (err, result) => {
+    pool.query(`UPDATE Users SET OTP = ? WHERE Email = ?`, [email, email], (err, result) => {
         if (result.affectedRows === 0) return res.status(404).send("Email không tồn tại!");
+        
         transporter.sendMail({
-            from: '"Hệ Thống" <giangseosi.10a4.c3dakglong@gmail.com>',
-            to: email, subject: 'Quên Mật Khẩu - Mã OTP',
+            from: '"Hệ Thống Lịch Họp" <giangseosi.10a4.c3dakglong@gmail.com>',
+            to: email, 
+            subject: 'Quên Mật Khẩu - Mã OTP',
             html: `<p>Mã OTP đổi mật khẩu của bạn là: <b style="color:red; font-size: 20px;">${otp}</b></p>`
+        }, (error, info) => {
+            if (error) {
+                console.error("❌ Lỗi gửi email quên mật khẩu:", error);
+                return res.status(500).send("Lỗi hệ thống: Không thể gửi email OTP. Vui lòng thử lại sau.");
+            }
+            console.log("✅ Gửi mail OTP quên mật khẩu thành công tới:", email);
+            res.status(200).send("OTP đã gửi.");
         });
-        res.status(200).send("OTP đã gửi.");
     });
 });
 
